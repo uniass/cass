@@ -1,0 +1,615 @@
+uber
+def haversine (lon_1, lon_2, lat_1, lat_2):
+    
+    lon_1, lon_2, lat_1, lat_2 = map(np.radians, [lon_1, lon_2, lat_1, lat_2])  #Degrees to Radians
+    
+    
+    diff_lon = lon_2 - lon_1
+    diff_lat = lat_2 - lat_1
+    
+
+    km = 2 * 6371 * np.arcsin(np.sqrt(np.sin(diff_lat/2.0)**2 + 
+                                      np.cos(lat_1) * np.cos(lat_2) * np.sin(diff_lon/2.0)**2))
+    
+    return km
+
+uber_2['Distance']= haversine(uber_2['pickup_longitude'],uber_2['dropoff_longitude'],
+                             uber_2['pickup_latitude'],uber_2['dropoff_latitude'])
+
+uber_2['Distance'] = uber_2['Distance'].astype(float).round(2)    # Round-off Optional
+plt.scatter(uber_2['Distance'], uber_2['fare_amount'])
+plt.xlabel("Distance")
+plt.ylabel("fare_amount")
+
+uber_2.drop(uber_2[uber_2['Distance'] > 60].index, inplace = True)
+uber_2.drop(uber_2[uber_2['Distance'] == 0].index, inplace = True)
+uber_2.drop(uber_2[uber_2['fare_amount'] == 0].index, inplace = True)
+uber_2.drop(uber_2[uber_2['fare_amount'] < 0].index, inplace = True)
+
+uber_2.drop(uber_2[(uber_2['fare_amount']>100) & (uber_2['Distance']<1)].index, inplace = True )
+uber_2.drop(uber_2[(uber_2['fare_amount']<100) & (uber_2['Distance']>100)].index, inplace = True )
+
+
+plt.scatter(uber_2['Distance'], uber_2['fare_amount'])
+plt.xlabel("Distance")
+plt.ylabel("fare_amount")
+
+
+uber_2['pickup_datetime'] = pd.to_datetime(uber_2['pickup_datetime'])
+
+uber_2['Year'] = uber_2['pickup_datetime'].apply(lambda time: time.year)
+uber_2['Month'] = uber_2['pickup_datetime'].apply(lambda time: time.month)
+uber_2['Day'] = uber_2['pickup_datetime'].apply(lambda time: time.day)
+uber_2['Day of Week'] = uber_2['pickup_datetime'].apply(lambda time: time.dayofweek)
+uber_2['Day of Week_num'] = uber_2['pickup_datetime'].apply(lambda time: time.dayofweek)
+uber_2['Hour'] = uber_2['pickup_datetime'].apply(lambda time: time.hour)
+
+day_map = {0:'Mon',1:'Tue',2:'Wed',3:'Thu',4:'Fri',5:'Sat',6:'Sun'}
+uber_2['Day of Week'] = uber_2['Day of Week'].map(day_map)
+
+uber_2['counter'] = 1
+
+uber_2['pickup'] = uber_2['pickup_latitude'].astype(str) + "," + uber_2['pickup_longitude'].astype(str)   
+uber_2['drop off'] = uber_2['dropoff_latitude'].astype(str) + "," + uber_2['dropoff_longitude'].astype(str)
+
+no_of_trips = []
+year = [2009, 2010, 2011, 2012, 2013, 2014, 2015]
+
+colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
+          '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
+
+for i in range(2009, 2016):
+    x = uber_2.loc[uber_2['Year'] == i, 'counter'].sum()
+    no_of_trips.append(x)
+
+print("Average trips a year: ")
+print(year, no_of_trips)
+
+plt.bar(year, no_of_trips, color=colors)
+
+year_vs_trips = uber_2.groupby(['Year','Month']).agg( 
+    no_of_trips = ('counter','count'),
+    Average_fair = ('fare_amount','mean'),
+    Total_fair = ('fare_amount','sum'),
+    Avg_distance = ( 'Distance', 'mean')).reset_index()
+
+year_vs_trips['avg_no_of_trips'] = year_vs_trips['no_of_trips']/30
+year_vs_trips['month_year'] = year_vs_trips['Month'].astype(str) +", "+ year_vs_trips['Year'].astype(str)
+
+
+year_vs_trips = year_vs_trips.reset_index()
+
+year_vs_trips.head()
+
+
+year_vs_trips.plot(kind='line',x='month_year',y='no_of_trips', xlabel='January, 2009 - June, 2015',
+    ylabel='No of Trips', title='No of trips vs Months')
+
+import statistics as st
+
+print("Mean of fare prices is % s "
+         % (st.mean(uber_2['fare_amount'])))
+
+print("Median of fare prices is % s "
+         % (st.median(uber_2['fare_amount'])))
+
+print("Standard Deviation of Fare Prices is % s "
+                % (st.stdev(uber_2['fare_amount'])))
+
+import statistics as st
+
+print("Mean of Distance is % s "
+         % (st.mean(uber_2['Distance'])))
+
+print("Median of Distance is % s "
+         % (st.median(uber_2['Distance'])))
+
+print("Standard Deviation of Distance is % s "
+                % (st.stdev(uber_2['Distance'])))
+
+
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(x_std, y_std, test_size=0.2, random_state=0)
+
+from sklearn.linear_model import LinearRegression
+l_reg = LinearRegression()
+l_reg.fit(X_train, y_train)
+
+print("Training set score: {:.2f}".format(l_reg.score(X_train, y_train)))
+
+
+y_pred = l_reg.predict(X_test)
+df = {'Actual': y_test, 'Predicted': y_pred}
+
+from tabulate import tabulate
+print(tabulate(df, headers = 'keys', tablefmt = 'psql'))
+
+
+
+
+
+___________________________________________________________________________________________
+
+ neural network
+
+import pandas as pd
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+df = pd.read_csv('Churn_Modelling.csv')
+df
+
+df=df.drop(['CustomerId','Surname',"RowNumber"],axis=1)
+
+X = df[['CreditScore','Age','Tenure','Balance','NumOfProducts','HasCrCard']] 
+y = df['Exited'] 
+from sklearn.model_selection import train_test_split 
+X_train,X_test,y_train,y_test = train_test_split(X,y,test_size = 0.30) 
+X_train
+
+
+from sklearn.preprocessing import StandardScaler
+sc = StandardScaler() 
+X_train = sc.fit_transform(X_train) 
+X_test = sc.transform(X_test) 
+
+X_train
+X_test
+
+import keras 
+from keras.models import Sequential
+from keras.layers import Dense
+ann =Sequential()
+
+
+ann.add(Dense(units=16, activation='relu'))
+# add second hidden layer
+ann.add(Dense(units=32, activation='relu'))
+# add output layer
+ann.add(Dense(units=1, activation='sigmoid'))
+ann.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+ann.fit(X_train,y_train,batch_size=10,epochs=50) 
+y_pred =ann.predict(X_test) 
+
+
+___________________________________________________________________________________________
+
+Email spam
+
+import pandas as pd
+import numpy as np 
+import matplotlib.pyplot as py
+import warnings 
+%matplotlib inline
+warnings.filterwarnings('ignore')
+from sklearn.model_selection import train_test_split
+from sklearn import metrics 
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
+df = pd.read_csv("spam.csv")
+df.info()
+df.describe()
+df.shape
+df.size
+df2 = df
+df2=pd.get_dummies(df2, columns =['Category'])
+
+Y= df2['Category_spam'].values
+Y
+X=df2["Message"].values
+X
+
+from sklearn.feature_extraction.text import CountVectorizer
+cv=CountVectorizer()
+x_train, x_test, y_train, y_test = train_test_split(X,Y, test_size = 0.3)
+x_train = cv.fit_transform(x_train)
+x_test = cv.transform(x_test)
+knn=KNeighborsClassifier(n_neighbors=7)
+knn.fit(x_train,y_train)
+y_pre = knn.predict(x_test)
+print("prediction",y_pre)
+print("KNN accuracy = ",metrics.accuracy_score(y_test,y_pre)) 
+
+model = SVC(C = 1) 
+# fit 
+model.fit(x_train, y_train) 
+# predict 
+y_pred = model.predict(x_test) 
+print("KNN accuracy = ",metrics.accuracy_score(y_test,y_pred)) 
+
+
+
+___________________________________________________________________________________________
+Diabetes
+
+
+from mlxtend.plotting import plot_decision_regions
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+sns.set()
+import warnings
+warnings.filterwarnings('ignore')
+%matplotlib inline
+#Loading the dataset
+diabetes_data = pd.read_csv('../input/diabetes.csv')
+
+#Print the first 5 rows of the dataframe.
+diabetes_data.head()
+diabetes_data.describe()
+diabetes_data.describe().T
+diabetes_data_copy = diabetes_data.copy(deep = True)
+diabetes_data_copy[['Glucose','BloodPressure','SkinThickness','Insulin','BMI']] = diabetes_data_copy[['Glucose','BloodPressure','SkinThickness','Insulin','BMI']].replace(0,np.NaN)
+
+## showing the count of Nans
+print(diabetes_data_copy.isnull().sum())
+diabetes_data_copy['Glucose'].fillna(diabetes_data_copy['Glucose'].mean(), inplace = True)
+diabetes_data_copy['BloodPressure'].fillna(diabetes_data_copy['BloodPressure'].mean(), inplace = True)
+diabetes_data_copy['SkinThickness'].fillna(diabetes_data_copy['SkinThickness'].median(), inplace = True)
+diabetes_data_copy['Insulin'].fillna(diabetes_data_copy['Insulin'].median(), inplace = True)
+diabetes_data_copy['BMI'].fillna(diabetes_data_copy['BMI'].median(), inplace = True)
+p = diabetes_data_copy.hist(figsize = (20,20))
+sns.countplot(y=diabetes_data.dtypes ,data=diabetes_data)
+plt.xlabel("count of each data type")
+plt.ylabel("data types")
+plt.show()
+from pandas.tools.plotting import scatter_matrix
+p=scatter_matrix(diabetes_data,figsize=(25, 25))
+p=sns.pairplot(diabetes_data_copy, hue = 'Outcome')
+from sklearn.preprocessing import StandardScaler
+sc_X = StandardScaler()
+X =  pd.DataFrame(sc_X.fit_transform(diabetes_data_copy.drop(["Outcome"],axis = 1),),
+        columns=['Pregnancies', 'Glucose', 'BloodPressure', 'SkinThickness', 'Insulin',
+       'BMI', 'DiabetesPedigreeFunction', 'Age'])
+y = diabetes_data_copy.Outcome
+from sklearn.model_selection import train_test_split
+X_train,X_test,y_train,y_test = train_test_split(X,y,test_size=1/3,random_state=42, stratify=y)
+
+from sklearn.neighbors import KNeighborsClassifier
+
+
+test_scores = []
+train_scores = []
+
+for i in range(1,15):
+
+    knn = KNeighborsClassifier(i)
+    knn.fit(X_train,y_train)
+    
+    train_scores.append(knn.score(X_train,y_train))
+    test_scores.append(knn.score(X_test,y_test))
+max_test_score = max(test_scores)
+test_scores_ind = [i for i, v in enumerate(test_scores) if v == max_test_score]
+print('Max test score {} % and k = {}'.format(max_test_score*100,list(map(lambda x: x+1, test_scores_ind))))
+
+
+
+___________________________________________________________________________________________
+
+Gradient
+
+
+cur_x = 3 
+rate = 0.01
+precision = 0.000001 
+previous_step_size = 1 
+max_iters = 10000 
+iters = 0 
+df = lambda x: 2*(x+5)  
+
+while previous_step_size > precision and iters < max_iters: 
+     prev_x = cur_x 
+     cur_x = cur_x - rate * df(prev_x) 
+     previous_step_size = abs(cur_x - prev_x)
+     iters = iters+1
+     print("Iteration",iters,"\nX value is",cur_x)
+     print("The local minimum occurs at", cur_x) 
+
+
+
+___________________________________________________________________________________________
+
+febonnacii
+
+def feb(n):
+  if n <= 1:
+    return n
+  else:
+    return(feb(n-1)+feb(n-2))
+
+k = 9
+if k<=0:
+  print("enter positive no")
+else:
+  print("fibonna is ")
+  for i in range(k):
+    print(feb(i))
+
+n1=0
+n2=1
+
+k=9
+if k<=0:
+  print("ENifk")
+else:
+  print("fibonna is")
+  print(n1)
+  print(n2)
+  for i in range(k-2):
+    nth = n1+n2
+    print(nth)
+    n1=n2
+    n2=nth
+
+_______________________________________________________________________________________________________-
+
+fractional knapsack
+
+class item:
+  def __init__(self, value, weight):
+    self.value= value
+    self.weight = weight
+
+def fraknap(W,arr):
+  arr.sort(key =lambda x:(x.value/x.weight), reverse = True)
+  finalvalue=0.0
+  for item in arr:
+    if item.weight<=W:
+      W-=item.weight
+      finalvalue+=item.value
+    else:
+      finalvalue+= item.value*W/item.weight
+      break
+  return finalvalue
+
+W=50
+arr=[item(60,10),item(100,20),item(120,30)]
+max_value=fraknap(W,arr)
+print(max_value)
+_--------------------------------------------------------------------------------------------
+01 Knapsack
+
+
+def knapSack(W, wt, val, n):
+  dp = [0 for i in range(W+1)]
+  for i in range(1, n+1):
+    for w in range(W, 0, -1):
+      if wt[i-1] <= w:
+        dp[w] = max(dp[w], dp[w-wt[i-1]]+val[i-1])
+  return dp[W]
+val= [60,100,120]
+wt=[10,20,30]
+W=50
+n=len(val)
+print(knapSack(W, wt, val, n))
+
+--------------------------------------------------------------------------------------------
+
+nQueens
+
+class solution:
+
+  def solveNQ(n):
+    col=set()
+    posdeg=set()
+    negdes=set()
+
+    res=[]
+    board=[["0"]*n for i in range(n)]
+
+    def backtrack(r):
+      if r==n:
+        copy=["".join(row) for row in board]
+        res.append(copy)
+      for c in range(n):
+        if c in col or (r+c) in posdeg or (r-c) in negdes:
+          continue
+        col.add(c)
+        posdeg.add(r+c)
+        negdes.add(r-c)
+        board[r][c]="Q"
+
+        backtrack(r+1)
+        col.remove(c)
+        posdeg.remove(r+c)
+        negdes.remove(r-c)
+        board[r][c]="0"
+    backtrack(0)
+    return res
+
+  nq=solveNQ(4)
+  print(nq)
+
+
+---------------------------------------------------------------------------------------------
+
+Job Sequencing
+
+
+
+ 
+def printJobScheduling(arr, t):
+ 
+    n = len(arr)
+ 
+    
+    for i in range(n):
+        for j in range(n - 1 - i):
+            if arr[j][2] < arr[j + 1][2]:
+                arr[j], arr[j + 1] = arr[j + 1], arr[j]
+ 
+    
+    result = [False] * t
+ 
+   
+    job = ['-1'] * t
+ 
+    
+    for i in range(len(arr)):
+ 
+       
+        for j in range(min(t - 1, arr[i][1] - 1), -1, -1):
+ 
+           
+            if result[j] is False:
+                result[j] = True
+                job[j] = arr[i][0]
+                break
+ 
+    
+    print(job)
+ 
+ 
+
+if __name__ == '__main__':
+    arr = [['a', 2, 100],  
+              ['b', 1, 19],
+              ['c', 2, 27],
+              ['d', 1, 25],
+              ['e', 3, 15]]
+ 
+ 
+    print("Following is maximum profit sequence of jobs")
+ 
+   
+    printJobScheduling(arr, 3)
+
+
+---------------------------------------------------------------------------------------------
+
+
+Huffman Encoding
+
+
+
+import heapq
+
+class node:
+	def __init__(self, freq, symbol, left=None, right=None):
+
+		self.freq = freq
+
+		self.symbol = symbol
+
+	
+		self.left = left
+
+	
+		self.right = right
+
+	
+		self.huff = ''
+		
+	def __lt__(self, nxt):
+		return self.freq < nxt.freq
+		
+def printNodes(node, val=''):
+	
+	newVal = val + str(node.huff)
+	if(node.left):
+		printNodes(node.left, newVal)
+	if(node.right):
+		printNodes(node.right, newVal)
+
+	if(not node.left and not node.right):
+		print(f"{node.symbol} -> {newVal}")
+
+chars = ['a', 'b', 'c', 'd', 'e', 'f']
+
+freq = [ 5, 9, 12, 13, 16, 45]
+
+nodes = []
+
+for x in range(len(chars)):
+	heapq.heappush(nodes, node(freq[x], chars[x]))
+
+while len(nodes) > 1:
+
+	left = heapq.heappop(nodes)
+	right = heapq.heappop(nodes)
+
+	left.huff = 0
+	right.huff = 1
+
+	newNode = node(left.freq+right.freq, left.symbol+right.symbol, left, right)
+
+	heapq.heappush(nodes, newNode)
+
+
+printNodes(nodes[0])
+
+
+------------------------------------------------------------------------------------------------------
+Quick Sort
+
+
+
+def partition(array, low, high):
+	pivot = array[high]
+
+	i = low - 1
+
+	for j in range(low, high):
+		if array[j] <= pivot:
+
+			i = i + 1
+			(array[i], array[j]) = (array[j], array[i])
+
+	(array[i + 1], array[high]) = (array[high], array[i + 1])
+	return i + 1
+
+def quickSort(array, low, high):
+	if low < high:
+
+		pi = partition(array, low, high)
+		quickSort(array, low, pi - 1)
+		quickSort(array, pi + 1, high)
+
+
+data = [1, 7, 4, 1, 10, 9, -2]
+print("Unsorted Array")
+print(data)
+
+size = len(data)
+
+quickSort(data, 0, size - 1)
+
+print('Sorted Array in Ascending Order:')
+print(data)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
